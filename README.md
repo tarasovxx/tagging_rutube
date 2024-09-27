@@ -38,7 +38,7 @@ blank
 | ---                | ---            | ---                                      |
 | Артем Тарасов      | Full stack | [t.me/tarasovxx](https://t.me/tarasovxx) |
 | ---                | ---            | ---                                      |
-| Харламов Александр | Machine Learning | [t.me/rapid76](https://t.me/@Wignorbo)     |
+| Харламов Александр | Machine Learning | [t.me/Wignorbo](https://t.me/@Wignorbo)     |
 | ---                | ---            | ---                                      |
 | Даниил Галимов     | Data Analyse | [t.me/Dan_Gan](https://t.me/Dan_Gan)     |
 | ---                | ---            | ---                                      |
