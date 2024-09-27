@@ -4,3 +4,5 @@ tqdm
 numpy
 faiss-cpu
 tabulate
+streamlit
+yt_dlp
