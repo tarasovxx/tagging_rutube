@@ -4,6 +4,7 @@ import tempfile
 import pandas as pd
 import streamlit as st
 
+from handler import convert_mp4_to_txt
 from utils import download_video, convert_video
 
 os.environ['CURL_CA_BUNDLE'] = ''
@@ -37,6 +38,13 @@ elif upload_option == "Загрузить по ссылке":
 
 if hasattr(st.session_state, 'video_path') and st.session_state.video_path:
     st.video(st.session_state.video_path)
+
+    st.write("Транскрибация видео:")
+
+    with st.spinner('Идет транскрибация, пожалуйста подождите...'):
+        transcript = convert_mp4_to_txt(st.session_state.video_path)
+
+    st.write(transcript)
 
 tags_file = st.file_uploader("Загрузите CSV файл с тегами", type=["csv"])
 if tags_file is not None:

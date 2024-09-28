@@ -4,3 +4,5 @@ __pycache__
 *.mp4
 .ruff_cache
 cache
+videos
+models
