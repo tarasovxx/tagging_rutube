@@ -1,6 +1,5 @@
 import locale
 import os
-import ssl
 from datetime import timedelta
 
 # if not already_processed:
@@ -27,7 +26,7 @@ def getpreferredencoding(do_setlocale=True):
 locale.getpreferredencoding = getpreferredencoding
 
 
-def convert_mp4_to_txt(input_file, output_file):
+def convert_mp4_to_txt(input_file: str, output_file="cache/temp.mp3") -> str | None:
     if os.path.isfile(input_file):
         print(f"\nФайл с местоположением `{input_file}` найден")
     else:
@@ -38,7 +37,7 @@ def convert_mp4_to_txt(input_file, output_file):
     print(f"input_file = {input_file}")
     # Extract audio stream (AAC) from video file
     audio_stream = ffmpeg.input(input_file).audio
-    aac_file = 'temp_audio.aac'
+    aac_file = 'cache/temp_audio.aac'
     if os.path.isfile(aac_file):
         os.remove(aac_file)
     # aac_file = 'temp_audio{ind}.aac'  # Temporary file for extracted audio
@@ -54,7 +53,7 @@ def convert_mp4_to_txt(input_file, output_file):
     audio = AudioSegment.from_file(aac_file, format='aac')
     audio.export(output_file, format='mp3')
 
-    output_audio = ''.join([input_file, '_transcribation.mp3'])
+    output_audio = output_file  # ''.join([input_file.split('.mp4')[0], '_transcribe.mp3'])
 
     # if not already_processed:
     #     convert_mp4_to_mp3(input_video, output_audio)
@@ -65,7 +64,6 @@ def convert_mp4_to_txt(input_file, output_file):
     #             f'Mp3 файл не был создан. Попробуйте перезапустить код, если не поможет, то перезагрузить вкладку и повторить действия заново')
     # else:
     #     output_audio = input_video
-    print()
 
     ###################################################
 
@@ -73,10 +71,10 @@ def convert_mp4_to_txt(input_file, output_file):
 
     model_name = 'medium'  # @param ["tiny", "small", "medium", "large", "tiny.en", "small.en", "medium.en"]
     # Disable SSL verification globally
-    ssl._create_default_https_context = ssl._create_unverified_context  # fixme
-
-    os.environ['CURL_CA_BUNDLE'] = ''  # fixme: only for local
-    os.environ['REQUESTS_CA_BUNDLE'] = ''  # fixme
+    # ssl._create_default_https_context = ssl._create_unverified_context  # fixme
+    #
+    # os.environ['CURL_CA_BUNDLE'] = ''  # fixme: only for local
+    # os.environ['REQUESTS_CA_BUNDLE'] = ''  # fixme
 
     cache_dir = os.path.expanduser("~/.cache/whisper")
     model_path = os.path.join(cache_dir, f"{model_name}.pt")
@@ -102,7 +100,7 @@ def convert_mp4_to_txt(input_file, output_file):
         audio_file_language = None
 
     # @title Name of the transcribed srt to generate, should be ending with `.srt`
-    transcribed_srt_name = 'transcribed.srt'  # @param {type:"string"}
+    transcribed_srt_name = f"{output_file}.srt"  # @param {type:"string"}
 
     # @markdown Далее идут опциональные параметры
 
@@ -129,6 +127,7 @@ def convert_mp4_to_txt(input_file, output_file):
         # @title Create SRT with transcription
         result_srt_list = []
         raw_text = []
+        res_string = ""
         for i in result['segments']:
             result_srt_list.append(
                 srt.Subtitle(index=i['id'], start=timedelta(seconds=i['start']), end=timedelta(seconds=i['end']),
@@ -148,14 +147,18 @@ def convert_mp4_to_txt(input_file, output_file):
         with open(transcribed_srt_name.split('.srt')[0] + ".txt", 'w', encoding='utf-8') as f:
             f.write("\n".join(raw_text))
 
+        res_string = " ".join(raw_text)
+        return res_string
+
     if not os.path.isfile(audio_file_name):
         print_red('mp3 файл для транскрибации не найден')
     else:
-        run_transcribe()
+        return run_transcribe()
 
 
 if __name__ == "__main__":
-    input_video = "cache/0a7a288165c6051ebd74010be4dc9aa8.mp4"
+    # input_video = "cache/0a7a288165c6051ebd74010be4dc9aa8.mp4"
+    input_video = "cache/0b73cea7b2dfdd7048dd84b95f8b9b0e.mp4"
     output_audio = "0a7a288165c6051ebd74010be4dc9aa8_transcribe.mp3"
     output_file = "res.txt"
-    convert_mp4_to_txt(input_video, output_file)
+    print(convert_mp4_to_txt(input_video))
