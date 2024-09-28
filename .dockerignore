@@ -1,0 +1,8 @@
+**/.*
+venv/
+*.md
+Dockerfile
+.git
+.idea
+videos
+cache/video_with_transcribe.csv
