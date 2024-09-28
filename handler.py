@@ -27,7 +27,7 @@ def getpreferredencoding(do_setlocale=True):
 locale.getpreferredencoding = getpreferredencoding
 
 
-def convert_mp4_to_mp3(input_file, output_file):
+def convert_mp4_to_txt(input_file, output_file):
     if os.path.isfile(input_file):
         print(f"\nФайл с местоположением `{input_file}` найден")
     else:
@@ -158,4 +158,4 @@ if __name__ == "__main__":
     input_video = "cache/0a7a288165c6051ebd74010be4dc9aa8.mp4"
     output_audio = "0a7a288165c6051ebd74010be4dc9aa8_transcribe.mp3"
     output_file = "res.txt"
-    convert_mp4_to_mp3(input_video, output_file)
+    convert_mp4_to_txt(input_video, output_file)
