@@ -50,6 +50,15 @@ def convert_video(input_path: str) -> str | None:
         return None
 
 
+def get_flatten_iab_tags(csv_path: str) -> list[str]:
+    iab_tags = list(map(str.strip, open(csv_path).readlines()[1:]))  # skip header
+    flatten_tags = [
+        ': '.join(map(str.strip, filter(bool, line.split(','))))  # split with ', ', strip and join with ': '
+        for line in iab_tags
+    ]
+    return list(filter(bool, flatten_tags))  # filter empty strings
+
+
 def print_red(text):
     red = "\033[31m"
     reset = "\033[0m"
