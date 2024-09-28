@@ -13,6 +13,8 @@ def load_model():
     return model
 
 
+# Уникальные теги первого уровня, полученные в ходе анализа тренировочной выборки
+# (см. baseline/bert.ipynb)
 np_iab_tags = np.array(['Спорт',
                         'Дом и сад',
                         'Изобразительное искусство',
@@ -67,7 +69,6 @@ def predict_tags(description, model, tokenizer, threshold=0.2, max_len=256):
             logits = outputs.logits
 
     probabilities = torch.sigmoid(logits)
-    print(probabilities)
     predicted_tags = (probabilities > threshold).int()
 
     return np_iab_tags[predicted_tags.cpu().numpy().flatten() == 1]
