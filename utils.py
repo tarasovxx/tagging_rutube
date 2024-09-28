@@ -48,3 +48,15 @@ def convert_video(input_path: str) -> str | None:
     except subprocess.CalledProcessError as e:
         st.error(f"Произошла ошибка при конвертации видео: {e}")
         return None
+
+
+def print_red(text):
+    red = "\033[31m"
+    reset = "\033[0m"
+    print(f"{red}{text}{reset}")
+
+
+def print_green(text):
+    green = "\033[32m"
+    reset = "\033[0m"
+    print(f"{green}{text}{reset}")

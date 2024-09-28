@@ -6,3 +6,8 @@ faiss-cpu
 tabulate
 streamlit
 yt_dlp
+pydub
+openai-whisper
+srt
+ffmpeg-python
+
