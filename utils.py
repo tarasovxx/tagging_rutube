@@ -61,6 +61,20 @@ def convert_video(input_path: str) -> str | None:
         return None
 
 
+def get_flatten_iab_tags(csv_path: str) -> list[str]:
+    '''
+    Функция получения списка тегов из csv файл
+    :param csv_path:
+    :return: list[str]
+    '''
+    iab_tags = list(map(str.strip, open(csv_path).readlines()[1:]))  # пропускаем header
+    flatten_tags = [
+        ': '.join(map(str.strip, filter(bool, line.split(','))))  # сплитим с ', ', нормализуем и объединяем с ': '
+        for line in iab_tags
+    ]
+    return list(filter(bool, flatten_tags))  # фильтруем пустые строки
+
+
 def print_red(text) -> None:
     '''
     Функция вывода текста в цветовой форме в красный цвет
