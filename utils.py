@@ -1,6 +1,8 @@
 import subprocess
 import tempfile
 
+from pathlib import Path
+
 import streamlit as st
 import yt_dlp
 
@@ -48,3 +50,12 @@ def convert_video(input_path: str) -> str | None:
     except subprocess.CalledProcessError as e:
         st.error(f"Произошла ошибка при конвертации видео: {e}")
         return None
+
+
+def get_flatten_iab_tags(csv_path: str) -> list[str]:
+    iab_tags = list(map(str.strip, open(csv_path).readlines()[1:]))  # skip header
+    flatten_tags = [
+        ': '.join(map(str.strip, filter(bool, line.split(','))))  # split with ', ', strip and join with ': '
+        for line in iab_tags
+    ]
+    return list(filter(bool, flatten_tags))  # filter empty strings
