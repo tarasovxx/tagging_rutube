@@ -4,6 +4,7 @@ import tempfile
 import pandas as pd
 import streamlit as st
 
+from model_loader import load_tokenizer, load_model, predict_tags
 from handler import convert_mp4_to_txt
 from utils import download_video, convert_video
 
@@ -11,13 +12,26 @@ os.environ['CURL_CA_BUNDLE'] = ''
 os.environ['REQUESTS_CA_BUNDLE'] = ''
 
 
+@st.cache_resource
+def get_tokenizer():
+    return load_tokenizer()
+
+
+@st.cache_resource
+def get_model():
+    return load_model()
+
+
+tokenizer = get_tokenizer()
+model = get_model()
+
+
 def get_tag(video_path, tags_df):
     return tags_df
 
-
 st.title("Users Jokers. Rutube | Tagging. Привязка тегов к видео")
 
-upload_option = st.radio("Выберите способ загрузки видео", ("Загрузить файл", "Загрузить по ссылке"))
+upload_option = st.radio("Выберите способ загрузки видео", ("Загрузить файл", "Загрузить по ссылке", "Предсказать по описанию"))
 
 video_path = None
 
@@ -35,6 +49,13 @@ elif upload_option == "Загрузить по ссылке":
         download_video_path = download_video(video_url)
         if download_video_path:
             st.session_state.video_path = convert_video(download_video_path)
+
+elif upload_option == "Предсказать по описанию":
+    text = st.text_area("Введите описание")
+    threshold = st.select_slider("Порог", options=[0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5])
+    if st.button("Предсказать тэги"):
+        tags = ', '.join(predict_tags(text, model, tokenizer, threshold=threshold))
+        st.write(tags)
 
 if hasattr(st.session_state, 'video_path') and st.session_state.video_path:
     st.video(st.session_state.video_path)
