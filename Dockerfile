@@ -1,14 +1,33 @@
-FROM python:3.9-slim
+FROM python:3.10-slim
 
-RUN apt-get update && apt-get install -y \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+ENV STREAMLIT_SERVER_HEADLESS=true
+ENV STREAMLIT_SERVER_PORT=8501
+ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+ENV APP_HOME=/home/app
 
-COPY requirements.txt .
+WORKDIR $APP_HOME
+
+# Установка ffmpeg и очистка apt cache
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
+# Создание appuser и выдача прав пользователю
+RUN useradd -m -s /bin/bash -G sudo appuser && echo "appuser ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Создание директории и выдача прав
+RUN mkdir -p /home/app/cache
+
+# Копирование requirements.txt и установка зависимостей
+COPY requirements.txt $APP_HOME
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . /app
+# Копирование исходного кода
+COPY . $APP_HOME
 
-WORKDIR /app
+# Обеспечение право собственности на все файлы пользователя приложения
+RUN chown -R appuser:appuser /home/app && chmod -R 755 /home/app
 
-CMD ["python", "app.py"]
+# Смена на пользователя appuser
+USER appuser
+
+# Запуск приложения
+CMD ["streamlit", "run", "app.py"]

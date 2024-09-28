@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 
 from model_loader import load_tokenizer, load_model, predict_tags
+from handler import convert_mp4_to_txt
 from utils import download_video, convert_video
 
 os.environ['CURL_CA_BUNDLE'] = ''
@@ -24,6 +25,9 @@ def get_model():
 tokenizer = get_tokenizer()
 model = get_model()
 
+
+def get_tag(video_path, tags_df):
+    return tags_df
 
 st.title("Users Jokers. Rutube | Tagging. Привязка тегов к видео")
 
@@ -55,6 +59,13 @@ elif upload_option == "Предсказать по описанию":
 
 if hasattr(st.session_state, 'video_path') and st.session_state.video_path:
     st.video(st.session_state.video_path)
+
+    st.write("Транскрибация видео:")
+
+    with st.spinner('Идет транскрибация, пожалуйста подождите...'):
+        transcript = convert_mp4_to_txt(st.session_state.video_path)
+
+    st.write(transcript)
 
 tags_file = st.file_uploader("Загрузите CSV файл с тегами", type=["csv"])
 if tags_file is not None:
