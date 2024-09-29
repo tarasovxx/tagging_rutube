@@ -1,17 +1,15 @@
-# main.py
-
 import os
 import json
 import numpy as np
 import torch
 import pandas as pd
-from transformers import BitsAndBytesConfig, LlavaOnevisionForConditionalGeneration, LlavaOnevisionProcessor
+from transformers import LlavaOnevisionForConditionalGeneration, LlavaOnevisionProcessor
 from utils import (read_video_pyav, num_tokens_from_string, get_summarize_text,
                    convert_mp4_to_txt, process_text, extract_tags_from_response)
 import av
 
 # Определение всех путей к файлам
-DATA_FOLDER = '/kaggle/input/test_tag_video'
+DATA_FOLDER = 'test_tag_video'  # Укажите правильный путь к папке
 TAG_LIST_FILE = os.path.join(DATA_FOLDER, 'IAB_tags_list.json')
 SAMPLE_SUBMISSION_FILE = os.path.join(DATA_FOLDER, 'sample_submission.csv')
 VIDEO_FOLDER = os.path.join(DATA_FOLDER, 'videos')
@@ -25,13 +23,15 @@ tags_lvl2 = {}
 tags_lvl3 = {}
 
 for lvl1_tag in tags_lvl1:
-    tags_lvl2[lvl1_tag] = []
-    for lvl2_tag, lvl3_tags in iab_tags[lvl1_tag].items():
-        tags_lvl2[lvl1_tag].append(lvl2_tag)
+    lvl2_dict = iab_tags[lvl1_tag]
+    lvl2_tags = list(lvl2_dict.keys())
+    tags_lvl2[lvl1_tag] = lvl2_tags
+    for lvl2_tag in lvl2_tags:
+        lvl3_tags = lvl2_dict[lvl2_tag]
         if isinstance(lvl3_tags, list):
-            tags_lvl3[lvl2_tag] = lvl3_tags
+            tags_lvl3[(lvl1_tag, lvl2_tag)] = lvl3_tags
         else:
-            tags_lvl3[lvl2_tag] = []
+            tags_lvl3[(lvl1_tag, lvl2_tag)] = []
 
 # Загрузка данных из sample_submission.csv
 sample_submission = pd.read_csv(SAMPLE_SUBMISSION_FILE)
@@ -46,7 +46,7 @@ model = LlavaOnevisionForConditionalGeneration.from_pretrained(
     device_map='auto',
 )
 
-generate_kwargs = {"max_new_tokens": 22, "do_sample": True, "top_p": 0.9}
+generate_kwargs = {"max_new_tokens": 50, "do_sample": True, "top_p": 0.9}
 
 # Список тематических "мусорных" фраз
 stop_phrases = [
@@ -77,6 +77,9 @@ for idx, row in sample_submission.iterrows():
     summarized_title = get_summarize_text(processed_title)
     summarized_description = get_summarize_text(processed_description)
 
+    # Объединение суммаризации заголовка и описания
+    summarized_title_and_description = f"{summarized_title} {summarized_description}"
+
     # Путь к видеофайлу
     video_path = os.path.join(VIDEO_FOLDER, f"{video_id}.mp4")
 
@@ -88,19 +91,25 @@ for idx, row in sample_submission.iterrows():
     else:
         summarized_transcription = ''
 
-    # Комбинация обработанных и суммированных текстов
-    combined_text = f"{summarized_title} {summarized_description} {summarized_transcription}"
-
     # Создание подсказки для уровня 1
     tags_lvl1s = '\n'.join(tags_lvl1)
 
     PROMPT = f"""
-Вы являетесь экспертом по тегированию видео в соответствии с IAB Content Taxonomy. На основе предоставленного видео и следующей информации: {combined_text}, выберите наиболее подходящие теги из списка ниже.
+Вы являетесь экспертом по тегированию видео в соответствии с IAB Content Taxonomy.
+
+Информация о видео: {summarized_title_and_description}
+
+Также, в видео говорится о следующем: {summarized_transcription}
+
+На основе предоставленного видео и информации выше, выберите наиболее подходящие теги из списка ниже.
 
 **Возможные теги**:
 {tags_lvl1s}
 
 Ответьте на русском языке в формате: [теги]. Выберите один или несколько тегов, соответствующих содержанию видео и информации.
+
+Пример ответа:
+[Массовая культура, Спорт]
 """
 
     # Подготовка данных для модели LLava
@@ -142,92 +151,133 @@ for idx, row in sample_submission.iterrows():
     # Извлечение предсказанных тегов уровня 1
     predicted_lvl1_tags = extract_tags_from_response(response)
 
-    # Предсказание тегов уровней 2 и 3
-    predicted_tags = predicted_lvl1_tags.copy()
+    final_tags = []
+
+    # Предсказание тегов уровней 2 и 3, и формирование полного тега
     for lvl1_tag in predicted_lvl1_tags:
-        lvl2_tags = tags_lvl2.get(lvl1_tag, [])
-        if lvl2_tags:
-            # Подготовка подсказки для уровня 2
-            lvl2_tags_str = '\n'.join(lvl2_tags)
-            PROMPT_LVL2 = f"""
-На основе выбранного тега "{lvl1_tag}" и предоставленной информации: {combined_text}, выберите наиболее подходящие подкатегории из списка ниже.
+        lvl1_tag = lvl1_tag.strip()
+        lvl2_tags_list = tags_lvl2.get(lvl1_tag, [])
+        if not lvl2_tags_list:
+            # Если нет подкатегорий, добавляем только уровень 1
+            final_tags.append(lvl1_tag)
+            continue
+
+        # Создание подсказки для уровня 2
+        lvl2_tags_str = '\n'.join(lvl2_tags_list)
+        PROMPT_LVL2 = f"""
+Вы являетесь экспертом по тегированию видео в соответствии с IAB Content Taxonomy.
+
+Информация о видео: {summarized_title_and_description}
+
+Также, в видео говорится о следующем: {summarized_transcription}
+
+На основе предоставленного видео и информации выше, выберите наиболее подходящие подкатегории для категории "{lvl1_tag}" из списка ниже.
 
 **Возможные подкатегории**:
 {lvl2_tags_str}
 
-Ответьте на русском языке в формате: [подкатегории]. Выберите один или несколько подкатегорий, соответствующих содержанию видео и информации.
+Ответьте на русском языке в формате: [категория: подкатегории]. Выберите один или несколько подкатегорий, соответствующих содержанию видео и информации.
+
+Пример ответа:
+[{lvl1_tag}: Подкатегория1, {lvl1_tag}: Подкатегория2]
 """
 
-            conversation_lvl2 = [
+        # Подготовка данных для модели LLava
+        conversation_lvl2 = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": PROMPT_LVL2},
+                    {"type": "video"},
+                    ],
+            },
+        ]
+
+        prompt_lvl2 = processor.apply_chat_template(conversation_lvl2, add_generation_prompt=True)
+
+        inputs_lvl2 = processor(text=prompt_lvl2, videos=[clip], padding=True, return_tensors="pt").to(model.device, torch.float16)
+
+        output_lvl2 = model.generate(**inputs_lvl2, **generate_kwargs)
+        generated_text_lvl2 = processor.batch_decode(output_lvl2, skip_special_tokens=True)
+
+        # Извлечение ответа ассистента
+        assistant_index = generated_text_lvl2[0].find('assistant\n')
+        if assistant_index != -1:
+            response_lvl2 = generated_text_lvl2[0][assistant_index + len('assistant\n'):]
+        else:
+            response_lvl2 = generated_text_lvl2[0]
+
+        # Извлечение предсказанных подкатегорий
+        predicted_lvl2_tags = extract_tags_from_response(response_lvl2)
+
+        for lvl2_tag in predicted_lvl2_tags:
+            lvl2_tag = lvl2_tag.strip()
+            full_tag = f"{lvl1_tag}: {lvl2_tag}"
+            lvl3_tags_list = tags_lvl3.get((lvl1_tag, lvl2_tag), [])
+
+            if not lvl3_tags_list:
+                # Если нет подподкатегорий, добавляем тег с уровнем 1 и 2
+                final_tags.append(full_tag)
+                continue
+
+            # Создание подсказки для уровня 3
+            lvl3_tags_str = '\n'.join(lvl3_tags_list)
+            PROMPT_LVL3 = f"""
+Вы являетесь экспертом по тегированию видео в соответствии с IAB Content Taxonomy.
+
+Информация о видео: {summarized_title_and_description}
+
+Также, в видео говорится о следующем: {summarized_transcription}
+
+На основе предоставленного видео и информации выше, выберите наиболее подходящие подподкатегории для подкатегории "{lvl2_tag}" из списка ниже.
+
+**Возможные подподкатегории**:
+{lvl3_tags_str}
+
+Ответьте на русском языке в формате: [категория: подкатегория: подподкатегории]. Выберите один или несколько подподкатегорий, соответствующих содержанию видео и информации.
+
+Пример ответа:
+[{lvl1_tag}: {lvl2_tag}: Подподкатегория1, {lvl1_tag}: {lvl2_tag}: Подподкатегория2]
+"""
+
+            # Подготовка данных для модели LLava
+            conversation_lvl3 = [
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": PROMPT_LVL2},
+                        {"type": "text", "text": PROMPT_LVL3},
                         {"type": "video"},
                         ],
                 },
             ]
 
-            prompt_lvl2 = processor.apply_chat_template(conversation_lvl2, add_generation_prompt=True)
+            prompt_lvl3 = processor.apply_chat_template(conversation_lvl3, add_generation_prompt=True)
 
-            inputs_lvl2 = processor(text=prompt_lvl2, videos=[clip], padding=True, return_tensors="pt").to(model.device, torch.float16)
+            inputs_lvl3 = processor(text=prompt_lvl3, videos=[clip], padding=True, return_tensors="pt").to(model.device, torch.float16)
 
-            output_lvl2 = model.generate(**inputs_lvl2, **generate_kwargs)
-            generated_text_lvl2 = processor.batch_decode(output_lvl2, skip_special_tokens=True)
+            output_lvl3 = model.generate(**inputs_lvl3, **generate_kwargs)
+            generated_text_lvl3 = processor.batch_decode(output_lvl3, skip_special_tokens=True)
 
-            assistant_index = generated_text_lvl2[0].find('assistant\n')
+            # Извлечение ответа ассистента
+            assistant_index = generated_text_lvl3[0].find('assistant\n')
             if assistant_index != -1:
-                response_lvl2 = generated_text_lvl2[0][assistant_index + len('assistant\n'):]
+                response_lvl3 = generated_text_lvl3[0][assistant_index + len('assistant\n'):]
             else:
-                response_lvl2 = generated_text_lvl2[0]
+                response_lvl3 = generated_text_lvl3[0]
 
-            predicted_lvl2_tags = extract_tags_from_response(response_lvl2)
+            # Извлечение предсказанных подподкатегорий
+            predicted_lvl3_tags = extract_tags_from_response(response_lvl3)
 
-            predicted_tags.extend(predicted_lvl2_tags)
+            for lvl3_tag in predicted_lvl3_tags:
+                lvl3_tag = lvl3_tag.strip()
+                full_tag_lvl3 = f"{lvl1_tag}: {lvl2_tag}: {lvl3_tag}"
+                final_tags.append(full_tag_lvl3)
 
-            # Предсказание тегов уровня 3
-            for lvl2_tag in predicted_lvl2_tags:
-                lvl3_tags = tags_lvl3.get(lvl2_tag, [])
-                if lvl3_tags:
-                    lvl3_tags_str = '\n'.join(lvl3_tags)
-                    PROMPT_LVL3 = f"""
-На основе выбранной подкатегории "{lvl2_tag}" и предоставленной информации: {combined_text}, выберите наиболее подходящие подподкатегории из списка ниже.
+    # Удаление дубликатов в final_tags
+    final_tags = list(set(final_tags))
 
-**Возможные подподкатегории**:
-{lvl3_tags_str}
-
-Ответьте на русском языке в формате: [подподкатегории]. Выберите один или несколько подподкатегорий, соответствующих содержанию видео и информации.
-"""
-
-                    conversation_lvl3 = [
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": PROMPT_LVL3},
-                                {"type": "video"},
-                                ],
-                        },
-                    ]
-
-                    prompt_lvl3 = processor.apply_chat_template(conversation_lvl3, add_generation_prompt=True)
-
-                    inputs_lvl3 = processor(text=prompt_lvl3, videos=[clip], padding=True, return_tensors="pt").to(model.device, torch.float16)
-
-                    output_lvl3 = model.generate(**inputs_lvl3, **generate_kwargs)
-                    generated_text_lvl3 = processor.batch_decode(output_lvl3, skip_special_tokens=True)
-
-                    assistant_index = generated_text_lvl3[0].find('assistant\n')
-                    if assistant_index != -1:
-                        response_lvl3 = generated_text_lvl3[0][assistant_index + len('assistant\n'):]
-                    else:
-                        response_lvl3 = generated_text_lvl3[0]
-
-                    predicted_lvl3_tags = extract_tags_from_response(response_lvl3)
-
-                    predicted_tags.extend(predicted_lvl3_tags)
-
-    # Сохранение предсказанных тегов
-    row['predicted_tags'] = ', '.join(predicted_tags)
+    # Сохранение предсказанных тегов в нужном формате
+    row['predicted_tags'] = ', '.join(final_tags)
     sample_submission.loc[idx] = row
 
 # Сохранение результатов

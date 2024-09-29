@@ -1,5 +1,3 @@
-# utils.py
-
 import re
 import nltk
 from nltk.corpus import stopwords
@@ -14,25 +12,26 @@ import whisper
 import numpy as np
 import av
 import tiktoken
+import os
 
 nltk.download('stopwords')
 
 def process_text(text, stop_phrases):
     """
-    Очистка текста от стоп-слов, пунктуации, лемматизация, удаление тематического мусора и суммаризация.
+    Очистка текста от стоп-слов, пунктуации, лемматизация и удаление тематического мусора.
     """
     # Приведение к нижнему регистру
     text = text.lower()
+
+    # Удаление стоп-фраз
+    for phrase in stop_phrases:
+        text = text.replace(phrase.lower(), '')
 
     # Удаление пунктуации
     text = re.sub(r'[^\w\s]', '', text)
 
     # Удаление цифр
     text = re.sub(r'\d+', '', text)
-
-    # Удаление стоп-фраз
-    for phrase in stop_phrases:
-        text = text.replace(phrase.lower(), '')
 
     # Токенизация
     tokens = nltk.word_tokenize(text, language='russian')
@@ -140,9 +139,10 @@ def extract_tags_from_response(response):
     """
     Извлечение тегов из ответа ассистента в формате [тег1, тег2, ...]
     """
-    matches = re.findall(r'\[(.*?)\]', response)
+    matches = re.findall(r'\[(.*?)\]', response, re.DOTALL)
     tags = []
     for match in matches:
+        # Разделение по запятым и новыми строками
         split_tags = re.split(r',|\n', match)
         split_tags = [tag.strip() for tag in split_tags if tag.strip()]
         tags.extend(split_tags)
