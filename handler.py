@@ -119,7 +119,7 @@ def convert_mp4_to_txt(input_file: str, output_file="cache/temp.mp3") -> str | N
         result = model.transcribe(audio_file_name, language=audio_file_language,
                                   verbose=True, no_speech_threshold=no_speech_threshold,
                                   suppress_tokens="",
-                                  initial_prompt="Текст на русском. Смешарки, Крош, Копатыч, Лосяш, Пин, Карыч, Совунья, Ёжик, Пин код, На старой железяке далеко не улетишь, На старой железяке далеко не уплывёшь, Хорош сидеть в овраге и ворочать железяки, Наука-штука хитрая мозги прокипятишь, Наука-штука крепкая все зубы обдерёшь, Вся жизнь твоя изменится, как только подберёшь самый пин код",
+                                  initial_prompt="",
                                   condition_on_previous_text=condition_on_previous_text)
 
         # Создание списка для хранения сегментов транскрипции
