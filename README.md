@@ -110,6 +110,9 @@ You can now view your Streamlit app in your browser.
 For better performance, install the Watchdog module:
 ```
 
+# Мы используем `SoTA LLaVA One Vision `
+![Пример работы](docs/llava_sota.jpeg)
+
 # Разработчики
 
 | Имя                | Роль             | Контакт                                  |
