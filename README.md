@@ -100,6 +100,15 @@ streamlit run app.py
    ```bash
    docker run -p 8501:8501 tagging_rutube
    ```
+   
+Равернув docker вы получите локальный IP с сетевым портом 8501, далее решение может работать без интернета.
+```bash
+You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8501
+
+For better performance, install the Watchdog module:
+```
 
 # Разработчики
 
