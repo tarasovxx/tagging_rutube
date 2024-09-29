@@ -8,7 +8,7 @@ def load_tokenizer():
 
 
 def load_model():
-    model = BertForSequenceClassification.from_pretrained('./bert_model')
+    model = BertForSequenceClassification.from_pretrained('./model')
     model.eval()
     return model
 

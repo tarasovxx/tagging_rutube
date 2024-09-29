@@ -15,9 +15,6 @@
 - Использование метаинформации о видео для предсказания тегов (Mock DB request)
 - Разработаны модули для скачивания и транскрибации видео (Whisper)
 
-# Пример решения
-![demo](https://github.com/tarasovxx/tagging_rutube/blob/main/data/gf.gif)
-
 # Установка
 1. Клонируйте репозиторий:
    
@@ -39,6 +36,23 @@ pip install -r requirements_base.txt
 ```bash
 pip install -r requirements_base.txt
 ```
+
+# Обучение модели
+
+Обучение BERT-модели происходит в файле [bert.ipynb](baseline/bert.ipynb), 
+где все подробно расписано по шагам, включая получение самого файла модели.
+
+Папка `model` кладется в корень проекта, оттуда приложение будет брать модель
+
+# Про файлы
+
+- baseline - папка с бейзлайном и ноутбуком с обучением BERT
+- app.py - веб-приложение на стримлите
+- category_mapping.py - предсказание по категории
+- handler.py - конвертация mp4 в текст
+- model_loader.py - модуль по работе с BERT-моделью
+- summarization.py - суммаризация текста
+- utils.py - прочие функции по работе с Rutube-видео
 
 # Запуск
 ```bash
