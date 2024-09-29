@@ -20,11 +20,11 @@ already_processed = already_processed_ == "Нет"
 
 
 def getpreferredencoding(do_setlocale=True) -> str:
-    '''
+    """
     Функция для получения предпочтительной кодировки (устанавливаем UTF-8)
     :param do_setlocale:
     :return: str
-    '''
+    """
     return "UTF-8"
 
 
@@ -32,12 +32,12 @@ locale.getpreferredencoding = getpreferredencoding
 
 
 def convert_mp4_to_txt(input_file: str, output_file="cache/temp.mp3") -> str | None:
-    '''
+    """
     Основная функция для конвертации видеофайла MP4 в текст (сохраняется .txt файл, а также возвращется строка
     :param input_file: str (path)
     :param output_file: str (path)
     :return: str | None
-    '''
+    """
     # Проверка наличия входного файла
     if os.path.isfile(input_file):
         print(f"\nФайл с местоположением `{input_file}` найден")
@@ -112,10 +112,10 @@ def convert_mp4_to_txt(input_file: str, output_file="cache/temp.mp3") -> str | N
     condition_on_previous_text = condition_on_previous_text == "Да"
 
     def run_transcribe() -> str:
-        '''
+        """
         Функция для выполнения транскрибации
         :return: str - транскрибированный текст
-        '''
+        """
         result = model.transcribe(audio_file_name, language=audio_file_language,
                                   verbose=True, no_speech_threshold=no_speech_threshold,
                                   suppress_tokens="",

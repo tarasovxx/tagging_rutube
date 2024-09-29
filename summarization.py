@@ -1,18 +1,19 @@
 from transformers import T5ForConditionalGeneration, GPT2Tokenizer
 import torch
 
-def get_summarize_text(text:str) -> str:
-    '''
+
+def get_summarize_text(text: str) -> str:
+    """
     Функция выдачи суммаризации по тексту
     :param text:
     :return:
-    '''
+    """
     # Загрузка токенизатора и модели
     tokenizer = GPT2Tokenizer.from_pretrained("RussianNLP/FRED-T5-Summarizer", eos_token="</s>")
     model = T5ForConditionalGeneration.from_pretrained("RussianNLP/FRED-T5-Summarizer")
 
     # Форматирование текста для модели
-    input_text = rf'''<LM> Сократи текст.\n ({text})'''
+    input_text = rf"""<LM> Сократи текст.\n ({text})"""
 
     # Определение устройства для выполнения (GPU или CPU)
     device = "cuda" if torch.cuda.is_available() else "cpu"

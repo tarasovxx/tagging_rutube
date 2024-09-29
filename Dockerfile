@@ -17,8 +17,8 @@ RUN useradd -m -s /bin/bash -G sudo appuser && echo "appuser ALL=(ALL) NOPASSWD:
 RUN mkdir -p /home/app/cache
 
 # Копирование requirements.txt и установка зависимостей
-COPY requirements.txt $APP_HOME
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements_base.txt $APP_HOME
+RUN pip install --no-cache-dir -r requirements_base.txt
 
 # Копирование исходного кода
 COPY . $APP_HOME

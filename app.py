@@ -1,12 +1,11 @@
 import os
-import tempfile
+import time
 
-import pandas as pd
 import streamlit as st
 
+from category_mapping import get_iab_tag_by_category
 from model_loader import load_tokenizer, load_model, predict_tags
-from handler import convert_mp4_to_txt
-from utils import download_video, convert_video
+from utils import get_video_info
 
 os.environ['CURL_CA_BUNDLE'] = ''
 os.environ['REQUESTS_CA_BUNDLE'] = ''
@@ -25,58 +24,28 @@ def get_model():
 tokenizer = get_tokenizer()
 model = get_model()
 
-
-def get_tag(video_path, tags_df):
-    return tags_df
-
-st.title("Users Jokers. Rutube | Tagging. Привязка тегов к видео")
-
-upload_option = st.radio("Выберите способ загрузки видео", ("Загрузить файл", "Загрузить по ссылке", "Предсказать по описанию"))
+st.title("Привязка тегов к видео")
+st.subheader('Users Jokers')
 
 video_path = None
 
-if upload_option == "Загрузить файл":
-    video_file = st.file_uploader("Загрузите видео", type=["mp4", "avi", "mov"])
-    if video_file is not None:
-        tfile = tempfile.NamedTemporaryFile(delete=False)
-        tfile.write(video_file.read())
-        # video_path = tfile.name
-        st.session_state.video_path = tfile.name
+video_url = st.text_input("Введите ссылку на видео")
+if video_url:
+    video_info = get_video_info(video_url)
+    st.header(video_info.title)
+    st.image(video_info.thumbnail_url)
+    st.write(video_info.description)
+    st.caption(video_info.category)
 
-elif upload_option == "Загрузить по ссылке":
-    video_url = st.text_input("Введите ссылку на видео")
-    if st.button("Скачать видео"):
-        download_video_path = download_video(video_url)
-        if download_video_path:
-            st.session_state.video_path = convert_video(download_video_path)
+    st.subheader('Теги')
+    start = time.time()
+    predicted_tags_by_description = predict_tags(video_info.description, model, tokenizer)
+    prediction_by_description_time = time.time() - start
+    st.write(f'По описанию: {", ".join(predicted_tags_by_description)}')
+    st.caption(f'Время работы: {prediction_by_description_time}с')
 
-elif upload_option == "Предсказать по описанию":
-    text = st.text_area("Введите описание")
-    threshold = st.select_slider("Порог", options=[0.025, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5])
-    if st.button("Предсказать тэги"):
-        tags = ', '.join(predict_tags(text, model, tokenizer, threshold=threshold))
-        st.write(tags)
-
-if hasattr(st.session_state, 'video_path') and st.session_state.video_path:
-    st.video(st.session_state.video_path)
-
-    st.write("Транскрибация видео:")
-
-    with st.spinner('Идет транскрибация, пожалуйста подождите...'):
-        transcript = convert_mp4_to_txt(st.session_state.video_path)
-
-    st.write(transcript)
-
-tags_file = st.file_uploader("Загрузите CSV файл с тегами", type=["csv"])
-if tags_file is not None:
-    tags_df = pd.read_csv(tags_file)
-    st.write("Загруженные теги:")
-    st.dataframe(tags_df)
-
-if st.button("Привязать теги к видео"):
-    if st.session_state.video_path is not None and tags_file is not None:
-        result_tags = get_tag(st.session_state.video_path, tags_df)
-        st.write("Результат привязки тегов:")
-        st.dataframe(result_tags)
-    else:
-        st.warning("Пожалуйста, загрузите и видео, и CSV файл с тегами.")
+    start = time.time()
+    predicted_tags_by_category = get_iab_tag_by_category(video_info.category)
+    prediction_by_category_time = time.time() - start
+    st.write(f'По категории: {predicted_tags_by_category}')
+    st.caption(f'Время работы: {prediction_by_category_time}с')

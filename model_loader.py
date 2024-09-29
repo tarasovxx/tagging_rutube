@@ -52,13 +52,17 @@ np_iab_tags = np.array(['Спорт',
                         'Компьютеры и цифровые технологии',
                         'Религия и духовность'])
 
+np_iab_tags_freq = np.array(
+    [1, 2, 9, 74, 131, 50, 18, 2, 1, 1, 19, 58, 58, 75, 558, 1, 66, 10, 2, 28, 1, 16, 11, 109, 16, 1, 23, 6, 23, 104, 1,
+     4, 1, 3, 78, 1])
+
 
 def prepare_input(description, tokenizer, max_len):
     inputs = tokenizer(description, max_length=max_len, padding='max_length', truncation=True, return_tensors='pt')
     return inputs['input_ids'], inputs['attention_mask']
 
 
-def predict_tags(description, model, tokenizer, threshold=0.2, max_len=256):
+def predict_tags(description, model, tokenizer, threshold=0.1, max_len=256):
     input_ids, attention_mask = prepare_input(description, tokenizer, max_len=max_len)
 
     with torch.no_grad():
@@ -68,7 +72,7 @@ def predict_tags(description, model, tokenizer, threshold=0.2, max_len=256):
         else:
             logits = outputs.logits
 
-    probabilities = torch.sigmoid(logits)
+    probabilities = torch.sigmoid(logits) / np_iab_tags_freq
     predicted_tags = (probabilities > threshold).int()
 
     return np_iab_tags[predicted_tags.cpu().numpy().flatten() == 1]
