@@ -17,25 +17,29 @@
 
 # Установка
 1. Клонируйте репозиторий:
-   
-```bash
-git clone https://github.com/tarasovxx/tagging_rutube
-```
-   
-2. Убедитесь, что у вас установлен Python версии 3.9 и выше.
-3. Установите зависимости:
+   ```bash
+   git clone https://github.com/tarasovxx/tagging_rutube
+   cd tagging_rutube
+   ```
 
+2. Убедитесь, что у вас установлен Python версии 3.9 и выше. Создайте и активируйте виртуальное окружение:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate
+   ```
+3. Установите зависимости:
+4. 
 Базовые зависимости для работы веб-интерфейса, обучения и инференса модели
 
-```bash
-pip install -r requirements_base.txt
-```
+   ```bash
+   pip install -r requirements_base.txt
+   ```
 
 Все зависимости для дополнительных модулей с транскрибацией и скачиванием видео
 
-```bash
-pip install -r requirements_base.txt
-```
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 # Обучение модели
 
